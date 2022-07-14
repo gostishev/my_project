@@ -3,25 +3,24 @@
 namespace App\DTO;
 
 use Symfony\Component\Validator\Constraints as Assert;
+use App\Validator as CustomAssert;
 
-/**
- * @UniqueEntity("name")
- */
 class CategoryInputDTO
 {
     /**
+     * @CustomAssert\FieldUnique()
      * @Assert\NotBlank
      * @Assert\Type("string")
      * @Assert\NotNull
      */
-    public ?string $name;
+    public $name;
 
     /**
      * @Assert\NotBlank
      * @Assert\Type("integer")
      * @Assert\NotNull
      */
-    public ?int $sort;
+    public $sort;
 
     public function __construct($name, $sort)
     {

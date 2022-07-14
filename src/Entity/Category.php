@@ -2,6 +2,8 @@
 
 namespace App\Entity;
 
+use Symfony\Component\Serializer\Annotation\Groups;
+
 use App\Repository\CategoryRepository;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -11,12 +13,21 @@ class Category implements \JsonSerializable
     #[ORM\Id]
     #[ORM\GeneratedValue(strategy: 'IDENTITY')]
     #[ORM\Column(type: 'integer')]
+    /**
+     * @Groups("group1")
+     */
     private $id;
 
     #[ORM\Column(type: 'string', length: 255)]
+    /**
+     * @Groups({"group1","group2"})
+     */
     private $name;
 
     #[ORM\Column(type: 'integer')]
+    /**
+     * @Groups("group2")
+     */
     private $sort;
 
     public function getId(): ?int

@@ -134,7 +134,7 @@ class ProductController extends AbstractController
     }
 
     /**
-     * @Route("/findOneBy/product/{$value}", name="product_findOneBy")
+     * @Route("/findOneBy/product", name="product_findOneBy")
      */
     public function findOneBy(ManagerRegistry $doctrine, string $value): Response
     {
