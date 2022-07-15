@@ -28,6 +28,10 @@ use Symfony\Component\Serializer\Serializer;
 
 use Symfony\Component\Validator\Constraints as Assert;
 use App\Validator as CustomAssert;
+use Symfony\Component\Validator\ConstraintValidator;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
+use App\Validator\Constraints\SortConstraint;
+use App\Validator\Constraints\NameConstraint;
 
 
 class CategoryController extends AbstractController
@@ -165,6 +169,7 @@ class CategoryController extends AbstractController
     {
         return new JsonResponse($data, $status, $headers);
     }
+
 
     /**
      * @return JsonResponse
@@ -318,14 +323,41 @@ class CategoryController extends AbstractController
 //                }
                     $name = $request->request->get('name');
                     $sort = $request->request->get('sort');
+                    var_dump($name);
+                    var_dump($sort);
 
                     if ($request->request->has('name') && $request->request->has('sort')) {
-                        $this->nameValidation($name, $validator, $category);
-                        $this->sortValidation($sort, $validator, $category);
+                        $violations = new ConstraintViolationList();
+                        $nameConstraint = new NameConstraint;
+                        $violationsName = $validator->validate($name, $nameConstraint);
+                        var_dump(count($violationsName));
+//                        var_dump($violationsName );
+                        $violations->addAll($violationsName);
+                        $sortConstraint = new SortConstraint;
+                        $violationsSort = $validator->validate($sort, $sortConstraint);
+                        var_dump(count($violationsSort));
+//                        var_dump($violationsSort );
+                        $violations->addAll($violationsSort);
+                        var_dump(count($violations));
+//                        var_dump($violations);
                     } elseif ($request->request->has('name')) {
-                        $this->nameValidation($name, $validator, $category);
+                        $nameConstraint = new NameConstraint;
+                        $violations = $validator->validate($name, $nameConstraint);
+                        $entityManager = $doctrine->getManager();
+                        $categoryRepo = $entityManager->getRepository(Category::class)->find($id);
+                        $sort = $categoryRepo->getSort();
+                        var_dump($sort);
+//                        $category->setName($name);
                     } elseif ($request->request->has('sort')) {
-                        $this->sortValidation($sort, $validator, $category);
+                        $sortConstraint = new SortConstraint;
+                        /** @var   ConstraintViolationList $violations */
+                        $violations = $validator->validate($sort, $sortConstraint);
+                        $entityManager = $doctrine->getManager();
+                        $categoryRepo = $entityManager->getRepository(Category::class)->find($id);
+                        $name = $categoryRepo->getName();
+                        var_dump($name);
+//                        $category->setSort($sort);
+
                     } else {
                         $data = [
                             'status' => 404,
@@ -334,17 +366,11 @@ class CategoryController extends AbstractController
                         return $this->response($data, 404);
                     }
 
-
-//                    if ($request->request->has('name')) {
-//                        $this->nameValidation($request, $validator, $category);
-//                    }
-//
-//
-//
-//                    if ($request->request->has('sort')) {
-//                        $this->sortValidation($request, $validator, $category);
-//                    }
-
+                    if (0 !== count($violations)) {
+                        throw  new CustomErrorException("", 422, null, $violations->getIterator());
+                    }
+                    $category->setSort($sort);
+                    $category->setName($name);
 
                     $entityManager->flush();
                     $data = [
@@ -353,34 +379,35 @@ class CategoryController extends AbstractController
                     ];
                     return $this->response($data);
 
-                } catch (NotFoundHttpException $e) {
-                    $data = [
-                        'status' => 404,
-                        'errors' => "Category not found for id: $id",
-                    ];
-                    return $this->response($data, 404);
-                }
+                } catch
+                    (NotFoundHttpException $e) {
+                        $data = [
+                            'status' => 404,
+                            'errors' => "Category not found for id: $id",
+                        ];
+                        return $this->response($data, 404);
+                    }
 
 
             } catch (CustomErrorException $e) {
-                return $this->response($e->getViolations(), $e->getCode());
+                    return $this->response($e->getViolations(), $e->getCode());
+                }
+
+            } catch (\Exception $e) {
+                $data = [
+                    'status' => 500,
+                    'errors' => $e->getMessage(),
+                ];
+                return $this->response($data, 500);
             }
 
-        } catch (\Exception $e) {
-            $data = [
-                'status' => 500,
-                'errors' => $e->getMessage(),
-            ];
-            return $this->response($data, 500);
         }
-
-    }
 
     private function sortValidation($sort, ValidatorInterface $validator, $category)
     {
-        $sortConstraint = new Assert\Type(['type' => 'integer']);
+        $sortConstraintType = new Assert\Type(['type' => 'integer']);
         /** @var   ConstraintViolationList $violations */
-        $violations = $validator->validate($sort, $sortConstraint);
+        $violations = $validator->validate($sort, $sortConstraintType);
         if (0 !== count($violations)) {
             throw  new CustomErrorException("", 422, null, $violations->getIterator());
         }
@@ -408,29 +435,42 @@ class CategoryController extends AbstractController
         $violationsType = $validator->validate($name, $nameConstraintType);
         if (0 !== count($violationsType)) {
             throw  new CustomErrorException("", 422, null, $violationsType->getIterator());
+//            $validator->context->buildViolation($nameConstraintType->message)
+//            ->
+//            addViolation();
         }
         $nameConstraintNull = new Assert\NotNull();
         /** @var   ConstraintViolationList $violationsNull */
         $violationsNull = $validator->validate($name, $nameConstraintNull);
         if (0 !== count($violationsNull)) {
             throw  new CustomErrorException("", 422, null, $violationsNull->getIterator());
+//            $this->fail( $nameConstraintNull);
         }
         $nameConstraintBlank = new Assert\NotBlank();
         /** @var   ConstraintViolationList $violationsBlank */
         $violationsBlank = $validator->validate($name, $nameConstraintBlank);
         if (0 !== count($violationsBlank)) {
             throw  new CustomErrorException("", 422, null, $violationsBlank->getIterator());
+//            $this->fail( $nameConstraintBlank);
         }
         $nameConstraintUnique = new CustomAssert\FieldUnique();
         /** @var   ConstraintViolationList $violationsUnique */
         $violationsUnique = $validator->validate($name, $nameConstraintUnique);
         if (0 !== count($violationsUnique)) {
             throw  new CustomErrorException("", 422, null, $violationsUnique->getIterator());
+//            $this->fail( $nameConstraintUnique);
         }
 
         $category->setName($name);
 
     }
+
+
+//    public function fail(Constraint $constraint)
+//    {
+//        $this->context->buildViolation($constraint->message)
+//            ->addViolation();
+//    }
 
 
 }
