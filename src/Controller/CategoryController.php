@@ -66,23 +66,6 @@ class CategoryController extends AbstractController
         }
     }
 
-//    /**
-//     * @Route("/category/{order}", name="categories_order", methods={"GET"})
-//     */
-//    public function getCategory(ManagerRegistry $doctrine, string $order): JsonResponse
-//    {
-//
-//        $classMetadataFactory = new ClassMetadataFactory(new AnnotationLoader(new AnnotationReader()));
-//        $category = $doctrine->getRepository(Category::class)->findBy([], ['sort' => $order]);
-//
-//        $normalizer = new ObjectNormalizer($classMetadataFactory);
-//        $serializer = new Serializer([$normalizer]);
-//
-//        $data = $serializer->normalize($category, null, ['groups' => 'group1']);
-//
-//        return $this->response($data );
-//    }
-
     /**
      * @Route("/category/{id}", name="category_show", methods={"GET"})
      */
@@ -170,7 +153,6 @@ class CategoryController extends AbstractController
         return new JsonResponse($data, $status, $headers);
     }
 
-
     /**
      * @return JsonResponse
      * @throws \Exception
@@ -188,21 +170,6 @@ class CategoryController extends AbstractController
             if (0 !== count($violations)) {
                 throw  new CustomErrorException("", 422, null, $violations->getIterator());
             }
-//            $errors = [];
-//            /** @var ConstraintViolation $violation */
-//            foreach ($violations as $violation) {
-//                $errors[$violation->getPropertyPath()] = $violation->getMessage();
-//            }
-//            $data = [
-//                'status' => 422,
-//                'errors' => $errors,
-//            ];
-//            return $this->response($data, 422);
-//        }
-
-//            if (!$request || !$request->get('name') || !$request->request->get('sort')){
-//                throw new \Exception();
-//            }
 
             $category = new Category();
             $category->setName($request->get('name'));
@@ -229,14 +196,6 @@ class CategoryController extends AbstractController
             return $this->response($e->getViolations(), $e->getCode());
         }
 
-//        }catch (\Exception $e){
-//            $data = [
-//                'status' => 422,
-//                'errors' => "Data no valid",
-//            ];
-//            return $this->response($data, 422);
-//        }
-
     }
 
     /**
@@ -246,52 +205,54 @@ class CategoryController extends AbstractController
     public function CategoryPut(Request $request, ManagerRegistry $doctrine, ValidatorInterface $validator, int $id): JsonResponse
     {
 
+//        try {
         try {
-            try {
 
-                $entityManager = $doctrine->getManager();
-                $category = $entityManager->getRepository(Category::class)->find($id);
+            $entityManager = $doctrine->getManager();
+            $category = $entityManager->getRepository(Category::class)->find($id);
 
-                if (!$category) {
-                    throw new NotFoundHttpException(
-                        'Not found category for id :' . $id, null, 404
-                    );
-                }
-
-                $request = $this->transformJsonBody($request);
-                $dto = new CategoryInputDTO($request->get('name'), $request->get('sort'));
-                /** @var   ConstraintViolationList $violations */
-                $violations = $validator->validate($dto);
-                if (0 !== count($violations)) {
-                    throw  new CustomErrorException("", 422, null, $violations->getIterator());
-                }
-
-                $category->setName($request->get('name'));
-                $category->setSort($request->get('sort'));
-                $entityManager->persist($category);
-                $entityManager->flush();
-
-                $id = $category->getId();
-                $name = $category->getName();
-                $sort = $category->getSort();
-                $data = [
-                    'status' => 200,
-                    'success' => "Category updated successfully",
-                    'data' => [
-                        'id' => $id,
-                        'name' => $name,
-                        'sort' => $sort,
-                    ],
-                ];
-                return $this->response($data);
-
-            } catch (NotFoundHttpException $e) {
-                $data = [
-                    'status' => 404,
-                    'errors' => "Category not found for id: $id",
-                ];
-                return $this->response($data, 404);
+            if (!$category) {
+                throw new NotFoundHttpException(
+                    'Not found category for id :' . $id, null, 404
+                );
             }
+
+            $request = $this->transformJsonBody($request);
+            $dto = new CategoryInputDTO($request->get('name'), $request->get('sort'));
+            /** @var   ConstraintViolationList $violations */
+            $violations = $validator->validate($dto);
+//            var_dump(count($violations));
+//            var_dump($violations);
+            if (0 !== count($violations)) {
+                throw  new CustomErrorException("", 422, null, $violations->getIterator());
+            }
+
+            $category->setName($request->get('name'));
+            $category->setSort($request->get('sort'));
+            $entityManager->persist($category);
+            $entityManager->flush();
+
+            $id = $category->getId();
+            $name = $category->getName();
+            $sort = $category->getSort();
+            $data = [
+                'status' => 200,
+                'success' => "Category updated successfully",
+                'data' => [
+                    'id' => $id,
+                    'name' => $name,
+                    'sort' => $sort,
+                ],
+            ];
+            return $this->response($data);
+
+        } catch (NotFoundHttpException $e) {
+            $data = [
+                'status' => 404,
+                'errors' => "Category not found for id: $id",
+            ];
+            return $this->response($data, 404);
+//            }
         } catch (CustomErrorException $e) {
             return $this->response($e->getViolations(), $e->getCode());
         }
@@ -304,173 +265,68 @@ class CategoryController extends AbstractController
     public function CategoryPatch(Request $request, ManagerRegistry $doctrine, ValidatorInterface $validator, int $id): JsonResponse
     {
         try {
-            try {
-                try {
-                    $entityManager = $doctrine->getManager();
-                    $category = $entityManager->getRepository(Category::class)->find($id);
-                    if (!$category) {
-                        throw new NotFoundHttpException(
-                            'Not found category for id :' . $id, null, 404
-                        );
-                    }
-
-                    $request = $this->transformJsonBody($request);
-//                $dto = new CategoryInputDTO($request->get('name'), $request->get('sort'));
-//                /** @var   ConstraintViolationList $violations */
-//                $violations = $validator->validate($dto);
-//                if (0 !== count($violations)) {
-//                    throw  new CustomErrorException("", 422, null, $violations->getIterator());
-//                }
-                    $name = $request->request->get('name');
-                    $sort = $request->request->get('sort');
-                    var_dump($name);
-                    var_dump($sort);
-
-                    if ($request->request->has('name') && $request->request->has('sort')) {
-                        $violations = new ConstraintViolationList();
-                        $nameConstraint = new NameConstraint;
-                        $violationsName = $validator->validate($name, $nameConstraint);
-                        var_dump(count($violationsName));
-//                        var_dump($violationsName );
-                        $violations->addAll($violationsName);
-                        $sortConstraint = new SortConstraint;
-                        $violationsSort = $validator->validate($sort, $sortConstraint);
-                        var_dump(count($violationsSort));
-//                        var_dump($violationsSort );
-                        $violations->addAll($violationsSort);
-                        var_dump(count($violations));
-//                        var_dump($violations);
-                    } elseif ($request->request->has('name')) {
-                        $nameConstraint = new NameConstraint;
-                        $violations = $validator->validate($name, $nameConstraint);
-                        $entityManager = $doctrine->getManager();
-                        $categoryRepo = $entityManager->getRepository(Category::class)->find($id);
-                        $sort = $categoryRepo->getSort();
-                        var_dump($sort);
-//                        $category->setName($name);
-                    } elseif ($request->request->has('sort')) {
-                        $sortConstraint = new SortConstraint;
-                        /** @var   ConstraintViolationList $violations */
-                        $violations = $validator->validate($sort, $sortConstraint);
-                        $entityManager = $doctrine->getManager();
-                        $categoryRepo = $entityManager->getRepository(Category::class)->find($id);
-                        $name = $categoryRepo->getName();
-                        var_dump($name);
-//                        $category->setSort($sort);
-
-                    } else {
-                        $data = [
-                            'status' => 404,
-                            'errors' => "There are no required fields in the request. The category has not changed for id: $id",
-                        ];
-                        return $this->response($data, 404);
-                    }
-
-                    if (0 !== count($violations)) {
-                        throw  new CustomErrorException("", 422, null, $violations->getIterator());
-                    }
-                    $category->setSort($sort);
-                    $category->setName($name);
-
-                    $entityManager->flush();
-                    $data = [
-                        'status' => 200,
-                        'success' => "Category field updated successfully",
-                    ];
-                    return $this->response($data);
-
-                } catch
-                    (NotFoundHttpException $e) {
-                        $data = [
-                            'status' => 404,
-                            'errors' => "Category not found for id: $id",
-                        ];
-                        return $this->response($data, 404);
-                    }
-
-
-            } catch (CustomErrorException $e) {
-                    return $this->response($e->getViolations(), $e->getCode());
-                }
-
-            } catch (\Exception $e) {
-                $data = [
-                    'status' => 500,
-                    'errors' => $e->getMessage(),
-                ];
-                return $this->response($data, 500);
+            $entityManager = $doctrine->getManager();
+            $category = $entityManager->getRepository(Category::class)->find($id);
+            if (!$category) {
+                throw new NotFoundHttpException(
+                    'Not found category for id :' . $id, null, 404
+                );
             }
 
-        }
+            $request = $this->transformJsonBody($request);
+            $name = $category->getName();
+            $sort = $category->getSort();
+            $violations = new ConstraintViolationList();
 
-    private function sortValidation($sort, ValidatorInterface $validator, $category)
-    {
-        $sortConstraintType = new Assert\Type(['type' => 'integer']);
-        /** @var   ConstraintViolationList $violations */
-        $violations = $validator->validate($sort, $sortConstraintType);
-        if (0 !== count($violations)) {
-            throw  new CustomErrorException("", 422, null, $violations->getIterator());
-        }
-        $sortConstraintNull = new Assert\NotNull();
-        /** @var   ConstraintViolationList $violationsNull */
-        $violationsNull = $validator->validate($sort, $sortConstraintNull);
-        if (0 !== count($violationsNull)) {
-            throw  new CustomErrorException("", 422, null, $violationsNull->getIterator());
-        }
-        $sortConstraintBlank = new Assert\NotBlank();
-        /** @var   ConstraintViolationList $violationsBlank */
-        $violationsBlank = $validator->validate($sort, $sortConstraintBlank);
-        if (0 !== count($violationsBlank)) {
-            throw  new CustomErrorException("", 422, null, $violationsBlank->getIterator());
-        }
+            if ($request->request->has('name')) {
+                $nameConstraint = new NameConstraint;
+                /** @var   ConstraintViolationList $violationsName */
+                $violationsName = $validator->validate($request->request->get('name'), $nameConstraint);
+                $violations->addAll($violationsName);
+                $name = $request->request->get('name');
+            }
+            if ($request->request->has('sort')) {
+                $sortConstraint = new SortConstraint;
+                /** @var   ConstraintViolationList $violationsSort */
+                $violationsSort = $validator->validate($request->request->get('sort'), $sortConstraint);
+                $violations->addAll($violationsSort);
+                $sort = $request->request->get('sort');
+            }
 
-        return $category->setSort($sort);
+            if (0 !== count($violations)) {
+                throw  new CustomErrorException("", 422, null, $violations->getIterator());
+            }
+
+            $category->setSort($sort);
+            $category->setName($name);
+            $entityManager->flush();
+            $data = [
+                'status' => 200,
+                'success' => "Category field updated successfully",
+            ];
+            $data = [
+                'status' => 200,
+                'success' => "Category updated successfully",
+                'data' => [
+                    'id' => $id,
+                    'name' => $name,
+                    'sort' => $sort,
+                ],
+            ];
+            return $this->response($data);
+
+        } catch
+        (NotFoundHttpException $e) {
+            $data = [
+                'status' => 404,
+                'errors' => "Category not found for id: $id",
+            ];
+            return $this->response($data, 404);
+
+        } catch (CustomErrorException $e) {
+            return $this->response($e->getViolations(), $e->getCode());
+        }
 
     }
-
-    private function nameValidation($name, ValidatorInterface $validator, $category)
-    {
-        $nameConstraintType = new Assert\Type(['type' => 'string']);
-        /** @var   ConstraintViolationList $violationsType */
-        $violationsType = $validator->validate($name, $nameConstraintType);
-        if (0 !== count($violationsType)) {
-            throw  new CustomErrorException("", 422, null, $violationsType->getIterator());
-//            $validator->context->buildViolation($nameConstraintType->message)
-//            ->
-//            addViolation();
-        }
-        $nameConstraintNull = new Assert\NotNull();
-        /** @var   ConstraintViolationList $violationsNull */
-        $violationsNull = $validator->validate($name, $nameConstraintNull);
-        if (0 !== count($violationsNull)) {
-            throw  new CustomErrorException("", 422, null, $violationsNull->getIterator());
-//            $this->fail( $nameConstraintNull);
-        }
-        $nameConstraintBlank = new Assert\NotBlank();
-        /** @var   ConstraintViolationList $violationsBlank */
-        $violationsBlank = $validator->validate($name, $nameConstraintBlank);
-        if (0 !== count($violationsBlank)) {
-            throw  new CustomErrorException("", 422, null, $violationsBlank->getIterator());
-//            $this->fail( $nameConstraintBlank);
-        }
-        $nameConstraintUnique = new CustomAssert\FieldUnique();
-        /** @var   ConstraintViolationList $violationsUnique */
-        $violationsUnique = $validator->validate($name, $nameConstraintUnique);
-        if (0 !== count($violationsUnique)) {
-            throw  new CustomErrorException("", 422, null, $violationsUnique->getIterator());
-//            $this->fail( $nameConstraintUnique);
-        }
-
-        $category->setName($name);
-
-    }
-
-
-//    public function fail(Constraint $constraint)
-//    {
-//        $this->context->buildViolation($constraint->message)
-//            ->addViolation();
-//    }
-
 
 }
