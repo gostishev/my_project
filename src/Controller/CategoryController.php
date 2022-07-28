@@ -43,7 +43,9 @@ class CategoryController extends AbstractController
     public function getCategories(ManagerRegistry $doctrine, Request $request): JsonResponse
     {
         try {
+
             $order = $request->query->get('order');
+
             if (!in_array($order, ['ASC', 'DESC'])) {
                 throw new \Exception();
             }
@@ -69,7 +71,7 @@ class CategoryController extends AbstractController
     /**
      * @Route("/category/{id}", name="category_show", methods={"GET"})
      */
-    public function show(ManagerRegistryAlias $doctrine, int $id): JsonResponse
+    public function showCategory(ManagerRegistry $doctrine, int $id): JsonResponse
     {
         try {
 
@@ -154,11 +156,10 @@ class CategoryController extends AbstractController
     }
 
     /**
-     * @return JsonResponse
      * @throws \Exception
      * @Route("/category", name="category_add", methods={"POST"})
      */
-    public function addCategory(Request $request, ManagerRegistry $doctrine, ValidatorInterface $validator)
+    public function CategoryAdd(Request $request, ManagerRegistry $doctrine, ValidatorInterface $validator): JsonResponse
     {
 
         try {

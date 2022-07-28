@@ -7,6 +7,8 @@ use App\Validator as CustomAssert;
 
 class CategoryInputDTO
 {
+
+
     /**
      * @CustomAssert\FieldUnique()
      * @Assert\NotBlank
