@@ -32,6 +32,10 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Serializer\Mapping\Loader\AnnotationLoader;
 use Doctrine\Common\Annotations\AnnotationReader;
 
+use App\Validator\Constraints\PageConstraint;
+use App\Validator\Constraints\PageSizeConstraint;
+use Symfony\Component\Validator\Constraints as Assert;
+
 
 class ProductController extends AbstractController
 {
@@ -146,7 +150,7 @@ class ProductController extends AbstractController
     /**
      * @Route("/product", name="products", methods={"GET"})
      */
-    public function getProducts(ManagerRegistry $doctrine, Request $request, ManagerRegistry $registry): JsonResponse
+    public function getProducts(ManagerRegistry $doctrine, Request $request, ManagerRegistry $registry, ValidatorInterface $validator): JsonResponse
     {
         try {
 
@@ -167,77 +171,36 @@ class ProductController extends AbstractController
 
                 $entityCount = (new ProductRepository($registry))->countEntityByFilterValue($doctrine, $filterValue);
                 if ($entityCount < 1) {
-                    throw new NotFoundHttpException ("Not found product with category_id :" . $filterValue);
+                    throw new NotFoundHttpException ("Not found products with category_id :" . $filterValue);
                 }
-
                 $pageSize = $request->query->has('pageSize') ? $request->query->get('pageSize') : 5;
-                if (($pageSize < 1) || ($pageSize > 100)) {
-                    throw new \Exception("Enter query parameter pageSize between 1 and 100 in URL");
-                }
                 $page = $request->query->has('page') ? $request->query->get('page') : 1;
-                $offset = ($page - 1) * $pageSize;
-                $pageCount = ceil($entityCount / $pageSize);
-                if (($page > $pageCount)) {
-                    throw new \Exception(
-                        'Query parameter page >' . $pageCount
-                    );
-                }
 
-                $classMetadataFactory = new ClassMetadataFactory(new AnnotationLoader(new AnnotationReader()));
+                [$pageSize, $offset] = $this->validatorPagination($page, $pageSize, $entityCount, $validator);
+
                 $productsRepo = $doctrine->getRepository(Product::class)->findBy([$filterBy => $filterValue], [$orderBy => $orderType], $pageSize, $offset);
-                $outputDtoArr = [];
-                foreach ($productsRepo as $product) {
-                    $createdAtTimestamp = $product->getCreatedAt()->format('U');
-                    $outputDto = new ProductOutputDTO(
-                        $product->getId(),
-                        $product->getName(),
-                        $product->getDescription(),
-                        $product->getPrice(),
-                        $createdAtTimestamp,
-                        $product->getCategory(),
-                    );
-                    $outputDtoArr[] = $outputDto;
-                }
-                $normalizer = new ObjectNormalizer($classMetadataFactory);
-                $serializer = new Serializer([$normalizer]);
-                $data = $serializer->normalize($outputDtoArr, null, ['groups' => 'group1']);
+
+                $data = $this->productGetSerializer($productsRepo);
+
                 return $this->response($data);
+
             }
 
-            $pageSize = $request->query->has('pageSize') ? $request->query->get('pageSize') : 5;
-            if (($pageSize < 1) || ($pageSize > 100)) {
-                throw new \Exception("Enter query parameter pageSize between 1 and 100 in URL");
-            }
-            $page = $request->query->has('page') ? $request->query->get('page') : 1;
-            $offset = ($page - 1) * $pageSize;
             $entityCount = (new ProductRepository($registry))->countEntity($doctrine);
-            $pageCount = ceil($entityCount / $pageSize);
-            if ($page > $pageCount) {
-                throw new \Exception(
-                    'Query parameter page >' . $pageCount
-                );
-            }
+            $pageSize = $request->query->has('pageSize') ? $request->query->get('pageSize') : 5;
+            $page = $request->query->has('page') ? $request->query->get('page') : 1;
 
-            $classMetadataFactory = new ClassMetadataFactory(new AnnotationLoader(new AnnotationReader()));
-            $productsRepo = $doctrine->getRepository(Product::class)->findBy([], [$orderBy => $orderType], $pageSize, $offset);;
-            $outputDtoArr = [];
-            foreach ($productsRepo as $product) {
-                $createdAtTimestamp = $product->getCreatedAt()->format('U');
-                $outputDto = new ProductOutputDTO(
-                    $product->getId(),
-                    $product->getName(),
-                    $product->getDescription(),
-                    $product->getPrice(),
-                    $createdAtTimestamp,
-                    $product->getCategory(),
-                );
-                $outputDtoArr[] = $outputDto;
-            }
-            $normalizer = new ObjectNormalizer($classMetadataFactory);
-            $serializer = new Serializer([$normalizer]);
-            $data = $serializer->normalize($outputDtoArr, null, ['groups' => 'group1']);
+            [$pageSize, $offset] = $this->validatorPagination($page, $pageSize, $entityCount, $validator);
+
+            $productsRepo = $doctrine->getRepository(Product::class)->findBy([], [$orderBy => $orderType], $pageSize, $offset);
+
+            $data = $this->productGetSerializer($productsRepo);
 
             return $this->response($data);
+
+        } catch (CustomErrorException $e) {
+
+            return $this->response($e->getViolations(), $e->getCode());
         } catch
         (NotFoundHttpException $e) {
             $data = [
@@ -247,71 +210,52 @@ class ProductController extends AbstractController
             ];
             return $this->response($data, 404);
 
-        } catch (\Exception $e) {
-            $data = [
-                'status' => 422,
-                'errors' => "Query parameter not valid",
-                'message' => $e->getMessage(),
-            ];
-            return $this->response($data, 422);
         }
     }
 
+    private function productGetSerializer(array $productsRepo): array
+    {
+        $outputDtoArr = [];
+        foreach ($productsRepo as $product) {
+            $outputDto = new ProductOutputDTO(
+                $product->getId(),
+                $product->getName(),
+                $product->getDescription(),
+                $product->getPrice(),
+                $product->getCreatedAt()->format('U'),
+                $product->getCategory(),
+            );
+            $outputDtoArr[] = $outputDto;
+        }
+        $classMetadataFactory = new ClassMetadataFactory(new AnnotationLoader(new AnnotationReader()));
+        $normalizer = new ObjectNormalizer($classMetadataFactory);
+        $serializer = new Serializer([$normalizer]);
+        $data = $serializer->normalize($outputDtoArr, null, ['groups' => 'group1']);
 
-//    /**
-//     * @Route("/product", name="product")
-//     */
-//    public
-//    function productIndex(ManagerRegistry $doctrine, $category_id = 30): Response
-//    {
-////        $category = new Category();
-////        $category->setName('Computer Peripherals');
-////        $category->setSort(333);
-//        $category = $doctrine->getRepository(Category::class)->find($category_id);
-//
-//        $product = new Product();
-//        $product->setName('Keyboards');
-//        $product->setPrice(12345.99);
-//        $product->setDescription('not Ergonomic not stylish!');
-//        $product->setCreatedAt(new \DateTimeImmutable('2022-07-20 12:28:10'));
-//
-//        // relates this product to the category
-////        $category->addProduct($product);
-//        $product->setCategory($category);
-//
-//        $entityManager = $doctrine->getManager();
-////        $entityManager->persist($category);
-//        $entityManager->persist($product);
-//        $entityManager->flush();
-//
-//        return new Response(
-//            'Saved new product with id: ' . $product->getId()
-//            . ' and new category with id: ' . $category->getId()
-//        );
-//    }
+        return $data;
+    }
 
+    private function validatorPagination(int $page, int $pageSize, int $entityCount, ValidatorInterface $validator): array|JsonResponse
+    {
+        $pageSizeConstraint = new PageSizeConstraint();
+        /** @var   ConstraintViolationList $violationsPageSize */
+        $violationsPageSize = $validator->validate($pageSize, $pageSizeConstraint);
 
-//    /**
-//     * @Route("/product/{id}", name="product_show", methods={"GET"})
-//     */
-//    public function productShow(ManagerRegistry $doctrine, int $id): JsonResponse
-//    {
-//
-//        $category = $doctrine->getRepository(Category::class)->find(30);
-//        $products = $category->getProducts();
-////        echo "<pre>";
-////        dump($products);
-//
-//        $productArr = [];
-//        foreach ($products as $key => $product) {
-//            $productArr[] = (array)$product;
-//        }
-////        $keysProductArr = array_keys($productArr);
-////        $productStr = json_encode($productArr[$keysProductArr[0]]);
-//
-//        return $this->response($productArr[0]);
-//
-//    }
+        if (0 !== count($violationsPageSize)) {
+            throw  new CustomErrorException("", 422, null, $violationsPageSize->getIterator());
+        }
 
+        $offset = ($page - 1) * $pageSize;
+        $pageCount = ceil($entityCount / $pageSize);
 
+        $pageConstraint = new PageConstraint([], $pageCount);
+        /** @var   ConstraintViolationList $violationsPage */
+        $violationsPage = $validator->validate($page, $pageConstraint);
+
+        if (0 !== count($violationsPage)) {
+            throw  new CustomErrorException("", 422, null, $violationsPage->getIterator());
+        }
+
+        return [$pageSize, $offset];
+    }
 }

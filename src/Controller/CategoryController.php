@@ -78,7 +78,7 @@ class CategoryController extends AbstractController
             $category = $doctrine->getRepository(Category::class)->find($id);
             if (!$category) {
                 throw new NotFoundHttpException(
-                    'Not found category for id :' . $id, null, 404
+                    "Category not found for id: $id", null, 404
                 );
             }
 
@@ -109,7 +109,7 @@ class CategoryController extends AbstractController
 
             if (!$category) {
                 throw new NotFoundHttpException(
-                    'Not found category for id :' . $id, null, 404
+                    "Category not found for id: $id", null, 404
                 );
             }
 
@@ -120,7 +120,7 @@ class CategoryController extends AbstractController
             $em->flush();
             $data = [
                 'status' => 200,
-                'success' => "Category deleted successfully for id: $id ",
+                'success' => "Category field delete successfully for id: $id ",
                 'data' => [
                     'id' => $id,
                     'name' => $name,
@@ -184,7 +184,7 @@ class CategoryController extends AbstractController
             $sort = $category->getSort();
             $data = [
                 'status' => 200,
-                'success' => "Category added successfully for id: $id",
+                'success' => "Category field post successfully for id: $id",
                 'data' => [
                     'id' => $id,
                     'name' => $name,
@@ -206,7 +206,6 @@ class CategoryController extends AbstractController
     public function CategoryPut(Request $request, ManagerRegistry $doctrine, ValidatorInterface $validator, int $id): JsonResponse
     {
 
-//        try {
         try {
 
             $entityManager = $doctrine->getManager();
@@ -214,7 +213,7 @@ class CategoryController extends AbstractController
 
             if (!$category) {
                 throw new NotFoundHttpException(
-                    'Not found category for id :' . $id, null, 404
+                    "Category not found for id: $id", null, 404
                 );
             }
 
@@ -222,8 +221,6 @@ class CategoryController extends AbstractController
             $dto = new CategoryInputDTO($request->get('name'), $request->get('sort'));
             /** @var   ConstraintViolationList $violations */
             $violations = $validator->validate($dto);
-//            var_dump(count($violations));
-//            var_dump($violations);
             if (0 !== count($violations)) {
                 throw  new CustomErrorException("", 422, null, $violations->getIterator());
             }
@@ -238,7 +235,7 @@ class CategoryController extends AbstractController
             $sort = $category->getSort();
             $data = [
                 'status' => 200,
-                'success' => "Category updated successfully",
+                'success' => "Category field put successfully for : $id",
                 'data' => [
                     'id' => $id,
                     'name' => $name,
@@ -253,7 +250,6 @@ class CategoryController extends AbstractController
                 'errors' => "Category not found for id: $id",
             ];
             return $this->response($data, 404);
-//            }
         } catch (CustomErrorException $e) {
             return $this->response($e->getViolations(), $e->getCode());
         }
@@ -270,7 +266,7 @@ class CategoryController extends AbstractController
             $category = $entityManager->getRepository(Category::class)->find($id);
             if (!$category) {
                 throw new NotFoundHttpException(
-                    'Not found category for id :' . $id, null, 404
+                    "Category not found for id: $id", null, 404
                 );
             }
 
@@ -303,11 +299,7 @@ class CategoryController extends AbstractController
             $entityManager->flush();
             $data = [
                 'status' => 200,
-                'success' => "Category field updated successfully",
-            ];
-            $data = [
-                'status' => 200,
-                'success' => "Category updated successfully",
+                'success' => "Category field patch successfully for : $id",
                 'data' => [
                     'id' => $id,
                     'name' => $name,
