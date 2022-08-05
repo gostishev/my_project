@@ -47,7 +47,7 @@ class CategoryController extends AbstractController
             $order = $request->query->get('order');
 
             if (!in_array($order, ['ASC', 'DESC'])) {
-                throw new \Exception();
+                throw new NotFoundHttpException();
             }
 
             $classMetadataFactory = new ClassMetadataFactory(new AnnotationLoader(new AnnotationReader()));
@@ -59,7 +59,7 @@ class CategoryController extends AbstractController
             $data = $serializer->normalize($category, null, ['groups' => 'group1']);
             return $this->response($data);
 
-        } catch (\Exception $e) {
+        } catch (NotFoundHttpException $e) {
             $data = [
                 'status' => 422,
                 'errors' => "Query parameter 'order' not equal to 'ASC' or 'DESC'",
@@ -156,7 +156,6 @@ class CategoryController extends AbstractController
     }
 
     /**
-     * @throws \Exception
      * @Route("/category", name="category_add", methods={"POST"})
      */
     public function CategoryAdd(Request $request, ManagerRegistry $doctrine, ValidatorInterface $validator): JsonResponse
@@ -200,7 +199,6 @@ class CategoryController extends AbstractController
     }
 
     /**
-     * @throws \Exception
      * @Route("/category/{id}", name="category_edit", methods={"PUT"})
      */
     public function CategoryPut(Request $request, ManagerRegistry $doctrine, ValidatorInterface $validator, int $id): JsonResponse
