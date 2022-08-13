@@ -233,12 +233,14 @@ class ProductController extends AbstractController
                 $product->getCreatedAt()->format('U'),
                 $product->getCategory(),
             );
+//            dump($product->getCategory());
             $outputDtoArr[] = $outputDto;
         }
         $classMetadataFactory = new ClassMetadataFactory(new AnnotationLoader(new AnnotationReader()));
         $normalizer = new ObjectNormalizer($classMetadataFactory);
         $serializer = new Serializer([$normalizer]);
         $data = $serializer->normalize($outputDtoArr, null, ['groups' => 'group1']);
+//        dump($data);
 
         return $data;
     }
