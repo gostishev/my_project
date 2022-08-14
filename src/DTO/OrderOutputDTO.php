@@ -38,7 +38,6 @@ class OrderOutputDTO
         $this->customerEmail = $customerEmail;
         $this->shipmentDate = $shipmentDate;
         $this->billingType = $billingType;
-//        $this->billingTypeName = $billingTypeName;
         $this->orderItems = $orderItems;
     }
 

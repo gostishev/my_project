@@ -347,7 +347,7 @@ class ProductController extends AbstractController
     /**
      * @Route("/product/{id}", name="product_get_fo_id", methods={"GET"})
      */
-    public function showCategory(ManagerRegistry $doctrine, int $id): JsonResponse
+    public function productGetFoId(ManagerRegistry $doctrine, int $id): JsonResponse
     {
         try {
 

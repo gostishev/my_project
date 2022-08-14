@@ -11,6 +11,9 @@ use App\Entity\Order;
 use App\Entity\OrderItem;
 use App\Entity\Product;
 use App\Exception\CustomErrorException;
+use App\Repository\OrderRepository;
+use App\Validator\Constraints\PageConstraint;
+use App\Validator\Constraints\PageSizeConstraint;
 use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -30,6 +33,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Validation;
 
 class OrderController extends AbstractController
+
+
 {
 //    #[Route('/order', name: 'app_order')]
 //    public function index(): Response
@@ -106,9 +111,9 @@ class OrderController extends AbstractController
             ksort($orderItemIdQuantityArray);
 
 //  Build array [2,1,1] from [[4=>2], [10=>1], [26=>1]]
-            $orderItemsQuantityArray = [];
+            $orderItemQuantityArray = [];
 //  Build array [4,10,26] from [[4=>2], [10=>1], [26=>1]]
-            $orderItemsIdArray = [];
+            $orderItemIdArray = [];
             foreach ($orderItemIdQuantityArray as $key => $item) {
                 $orderItemQuantityArray[] = $item;
                 $orderItemIdArray[] = $key;
@@ -122,9 +127,9 @@ class OrderController extends AbstractController
             $productArrayObjects = $repoProducts->findBy(['id' => $orderItemIdArray], ["id" => 'ASC']);
 
 //  Comparison count orderItems from request and count of Products from productRepository
-            if (count($orderItemIdArray) !== count( $productArrayObjects )) {
+            if (count($orderItemIdArray) !== count($productArrayObjects)) {
                 $productIdArray = [];
-                foreach ( $productArrayObjects  as $product) {
+                foreach ($productArrayObjects as $product) {
                     $productIdArray[] = $product->getId();
                 }
                 $error = implode(',', array_diff($orderItemIdArray, $productIdArray));
@@ -136,15 +141,15 @@ class OrderController extends AbstractController
             $sumOrderTotal = 0.00;
             for ($i = 0; $i < $countOrderItem; $i++) {
                 $orderItem = new OrderItem();
-                $orderItem->setProductName( $productArrayObjects [$i]->getName());
-                $orderItem->setProductId( $productArrayObjects [$i]->getId());
-                $orderItem->setProductPrice( $productArrayObjects [$i]->getPrice());
+                $orderItem->setProductName($productArrayObjects [$i]->getName());
+                $orderItem->setProductId($productArrayObjects [$i]->getId());
+                $orderItem->setProductPrice($productArrayObjects [$i]->getPrice());
                 $orderItem->setProductQuantity($orderItemQuantityArray[$i]);
                 $order->addOrderItem($orderItem);
                 $entityManager = $doctrine->getManager();
                 $entityManager->persist($orderItem);
 
-                $sumOrderTotal = $sumOrderTotal + ( $productArrayObjects [$i]->getPrice() * $orderItemQuantityArray[$i]);
+                $sumOrderTotal = $sumOrderTotal + ($productArrayObjects [$i]->getPrice() * $orderItemQuantityArray[$i]);
             }
             $order->setOrderTotal($sumOrderTotal);
 
@@ -153,9 +158,7 @@ class OrderController extends AbstractController
             $entityManager->flush();
 
             $ordersRepo[] = $order;
-            $orderItemArrayObjects = $order->getOrderItems();
-            $orderItemOutputDTOArray = $this->orderItemOutputDataTransform($orderItemArrayObjects);
-            $dataOrder = $this->orderGetSerializer($ordersRepo, $orderItemOutputDTOArray );
+            $dataOrder = $order->orderGetSerializer($ordersRepo);
             return $this->response($dataOrder);
 
         } catch (NotFoundHttpException $e) {
@@ -170,44 +173,120 @@ class OrderController extends AbstractController
 
     }
 
-    private function orderGetSerializer(array $ordersRepo, $countOrderItems): array
+    /**
+     * @Route("/order/{id}", name="order_get_fo_id", methods={"GET"})
+     */
+    public function orderGetFoId(ManagerRegistry $doctrine, int $id): JsonResponse
     {
-        $orderOutputDTOArr = [];
-        foreach ($ordersRepo as $order) {
-            $outputDto = new OrderOutputDTO(
-                $order->getCustomerEmail(),
-                $order->getShipmentDate()->format('U'),
-                $order->getBillingType(),
-                $countOrderItems,
-            );
-            $orderOutputDTOArr[] = $outputDto;
-        }
-//        dump($orderOutputDTOArr);
-//        $classMetadataFactory = new ClassMetadataFactory(new AnnotationLoader(new AnnotationReader()));
-//        $normalizers = [new DateTimeNormalizer(), new ObjectNormalizer($classMetadataFactory)];
-//        $serializer = new Serializer($normalizers);
-//        $data = $serializer->normalize($orderOutputDTOArr, null, ['groups' => 'group1']);
-        $classMetadataFactory = new ClassMetadataFactory(new AnnotationLoader(new AnnotationReader()));
-        $normalizer = new ObjectNormalizer($classMetadataFactory);
-        $serializer = new Serializer([$normalizer]);
-        $data = $serializer->normalize($orderOutputDTOArr, null, ['groups' => 'group1']);
+        try {
 
-        return $data;
+            $order = $doctrine->getRepository(Order::class)->find($id);
+            if (!$order) {
+                throw new NotFoundHttpException(
+                    "order not found for id: $id", null, 404
+                );
+            }
+
+            $ordersRepo[] = $order;
+            $dataOrder = $order->orderGetSerializer($ordersRepo);
+            return $this->response($dataOrder);
+
+        } catch (NotFoundHttpException $e) {
+            $data = [
+                'status' => 404,
+                'errors' => "Product not found for id: $id",
+            ];
+            return $this->response($data, 404);
+        }
     }
 
-    private function orderItemOutputDataTransform($orderItemArrayObjects): array
+    /**
+     * @Route("/order", name="orders", methods={"GET"})
+     */
+//  "http://localhost:8082/order?page=1&pageSize=2"
+    public function getOrders(ManagerRegistry $doctrine, Request $request, ManagerRegistry $registry, ValidatorInterface $validator): JsonResponse
     {
-        $orderItemOutputDTOArray = [];
-        /** @var   OrderItem $orderItem */
-        foreach ($orderItemArrayObjects as $orderItem) {
-            $orderItemDTO = new OrderItemOutputDTO(
-                $orderItem->getProductName(),
-                $orderItem->getProductPrice(),
-                $orderItem->getProductQuantity(),
-            );
-            $orderItemOutputDTOArray[] = $orderItemDTO;
+        try {
+            $entityCount = (new OrderRepository($registry))->countEntity($doctrine);
+            if ($entityCount < 1) {
+                throw new NotFoundHttpException ("Not found orders ");
+            }
+
+            $pageSize = $request->query->has('pageSize') ? $request->query->get('pageSize') : 2;
+            $page = $request->query->has('page') ? $request->query->get('page') : 1;
+
+            [$pageSize, $offset] = $this->validatorPagination($page, $pageSize, $entityCount, $validator);
+
+            $ordersRepo = $doctrine->getRepository(Order::class)->findBy([], ["id" => "ASC"], $pageSize, $offset);
+            $dataOrder = (new Order())->orderGetSerializer($ordersRepo);
+            return $this->response($dataOrder);
+
+        } catch (CustomErrorException $e) {
+
+            return $this->response($e->getViolations(), $e->getCode());
+        } catch
+        (NotFoundHttpException $e) {
+            $data = [
+                'status' => 404,
+                'message' => $e->getMessage(),
+            ];
+            return $this->response($data, 404);
         }
-        return $orderItemOutputDTOArray;
+    }
+
+    private function validatorPagination(int $page, int $pageSize, int $entityCount, ValidatorInterface $validator): array|JsonResponse
+    {
+        $pageSizeConstraint = new PageSizeConstraint();
+        /** @var   ConstraintViolationList $violationsPageSize */
+        $violationsPageSize = $validator->validate($pageSize, $pageSizeConstraint);
+
+        if (0 !== count($violationsPageSize)) {
+            throw  new CustomErrorException("", 422, null, $violationsPageSize->getIterator());
+        }
+
+        $offset = ($page - 1) * $pageSize;
+        $pageCount = ceil($entityCount / $pageSize);
+
+        $pageConstraint = new PageConstraint([], $pageCount);
+        /** @var   ConstraintViolationList $violationsPage */
+        $violationsPage = $validator->validate($page, $pageConstraint);
+
+        if (0 !== count($violationsPage)) {
+            throw  new CustomErrorException("", 422, null, $violationsPage->getIterator());
+        }
+
+        return [$pageSize, $offset];
+    }
+
+    /**
+     * @Route("/order/{id}", name= "order_remove", methods={"DELETE"} )
+     */
+    public function removeOrder(ManagerRegistry $doctrine, int $id): JsonResponse
+    {
+        try {
+            $em = $doctrine->getManager();
+            $order = $doctrine->getRepository(Order::class)->find($id);
+
+            if (!$order) {
+                throw new NotFoundHttpException(
+                    "Order not found for id: $id", null, 404
+                );
+            }
+
+            $em->remove($order);
+            $em->flush();
+
+            $orderRepo[] = $order;
+            $data = $order->orderGetSerializer($orderRepo);
+            return $this->response($data);
+
+        } catch (NotFoundHttpException $e) {
+            $data = [
+                'status' => 404,
+                'errors' => "Order not found for id: $id",
+            ];
+            return $this->response($data, 404);
+        }
     }
 
 

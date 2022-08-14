@@ -39,6 +39,16 @@ class OrderRepository extends ServiceEntityRepository
         }
     }
 
+    public function countEntity(ManagerRegistry $doctrine)
+    {
+        $em = $doctrine->getManager();
+        $repoEntity = $em->getRepository(Order::class);
+        return $repoEntity->createQueryBuilder('a')
+            ->select('count(a.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
 //    /**
 //     * @return Order[] Returns an array of Order objects
 //     */

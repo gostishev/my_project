@@ -2,10 +2,17 @@
 
 namespace App\Entity;
 
+use App\DTO\OrderItemOutputDTO;
+use App\DTO\OrderOutputDTO;
 use App\Repository\OrderRepository;
+use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactory;
+use Symfony\Component\Serializer\Mapping\Loader\AnnotationLoader;
+use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
+use Symfony\Component\Serializer\Serializer;
 
 #[ORM\Entity(repositoryClass: OrderRepository::class)]
 #[ORM\Table(name: '`order`')]
@@ -19,8 +26,8 @@ class Order
     #[ORM\Column(type: 'string', length: 255)]
     private $customerEmail;
 
-    #[ORM\Column(type: 'date')]
-    private $shipmentDate;
+    #[ORM\Column(type: 'date_immutable')]
+    private \DateTimeImmutable $shipmentDate;
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
     private $orderTotal;
@@ -30,10 +37,10 @@ class Order
     /**
      * @ORM\JoinColumn(name="billing_type_id", referencedColumnName="id", onDelete="CASCADE")
      */
-
     private $billingType;
 
-    #[ORM\OneToMany(mappedBy: 'order', targetEntity: OrderItem::class)]
+    #[ORM\OneToMany(mappedBy: 'order', targetEntity: OrderItem::class, orphanRemoval: true)]
+//    #[ORM\JoinColumn(nullable: true)]
     private $orderItems;
 
     public function __construct()
@@ -123,4 +130,42 @@ class Order
 
         return $this;
     }
+
+    public function orderGetSerializer(array $ordersRepo): array
+    {
+        $orderOutputDTOArr = [];
+        foreach ($ordersRepo as $order) {
+            $outputDto = new OrderOutputDTO(
+                $order->getCustomerEmail(),
+                $order->getShipmentDate()->format('U'),
+                $order->getBillingType(),
+                $order->orderItemOutputDataTransform(),
+            );
+            $orderOutputDTOArr[] = $outputDto;
+        }
+
+        $classMetadataFactory = new ClassMetadataFactory(new AnnotationLoader(new AnnotationReader()));
+        $normalizer = new ObjectNormalizer($classMetadataFactory);
+        $serializer = new Serializer([$normalizer]);
+        $data = $serializer->normalize($orderOutputDTOArr, null, ['groups' => 'group1']);
+
+        return $data;
+    }
+
+    public function orderItemOutputDataTransform(): array
+    {
+        $orderItemArrayObjects = $this->getOrderItems();
+        $orderItemOutputDTOArray = [];
+        /** @var   OrderItem $orderItem */
+        foreach ($orderItemArrayObjects as $orderItem) {
+            $orderItemDTO = new OrderItemOutputDTO(
+                $orderItem->getProductName(),
+                $orderItem->getProductPrice(),
+                $orderItem->getProductQuantity(),
+            );
+            $orderItemOutputDTOArray[] = $orderItemDTO;
+        }
+        return $orderItemOutputDTOArray;
+    }
+
 }

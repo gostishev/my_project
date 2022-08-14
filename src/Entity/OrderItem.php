@@ -29,8 +29,11 @@ class OrderItem
     private $productPrice;
 
     #[ORM\ManyToOne(targetEntity: Order::class, inversedBy: 'orderItems')]
-    #[ORM\JoinColumn(nullable: false)]
-    private $order;
+//    #[ORM\JoinColumn(nullable: true)]
+//    /**
+//     * @ORM\JoinColumn(name="category_id", referencedColumnName="id", onDelete="CASCADE")
+//     */
+    private  $order;
 
     #[ORM\Column(type: 'integer')]
     /**
