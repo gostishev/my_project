@@ -25,10 +25,6 @@ final class Version20220719102010 extends AbstractMigration
         $this->addSql('CREATE INDEX IDX_D34A04AD12469DE2 ON product (category_id)');
         $this->addSql('COMMENT ON COLUMN product.created_at IS \'(DC2Type:datetime_immutable)\'');
         $this->addSql('ALTER TABLE product ADD CONSTRAINT FK_D34A04AD12469DE2 FOREIGN KEY (category_id) REFERENCES category (id) NOT DEFERRABLE INITIALLY IMMEDIATE');
-//        $this->addSql('DROP INDEX category_name_key');
-//        $this->addSql('CREATE SEQUENCE category_id_seq');
-//        $this->addSql('SELECT setval(\'category_id_seq\', (SELECT MAX(id) FROM category))');
-//        $this->addSql('ALTER TABLE category ALTER id SET DEFAULT nextval(\'category_id_seq\')');
     }
 
     public function down(Schema $schema): void
