@@ -21,22 +21,23 @@ class OrderOutputDTO
     /**
      * @Groups ("group1")
      */
-    public $billingType;
+    public $orderTotal;
 
-//    /**
-//     * @Groups ("group1")
-//     */
-//    public $billingTypeName;
+    /**
+     * @Groups ("group1")
+     */
+    public $billingType;
 
     /**
      * @Groups ("group1")
      */
     public $orderItems;
 
-    public function __construct($customerEmail, $shipmentDate, $billingType,array $orderItems)
+    public function __construct($customerEmail, $shipmentDate, $orderTotal, $billingType,array $orderItems)
     {
         $this->customerEmail = $customerEmail;
         $this->shipmentDate = $shipmentDate;
+        $this->orderTotal = $orderTotal;
         $this->billingType = $billingType;
         $this->orderItems = $orderItems;
     }

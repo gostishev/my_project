@@ -138,6 +138,7 @@ class Order
             $outputDto = new OrderOutputDTO(
                 $order->getCustomerEmail(),
                 $order->getShipmentDate()->format('U'),
+                $order->getOrderTotal(),
                 $order->getBillingType(),
                 $order->orderItemOutputDataTransform(),
             );

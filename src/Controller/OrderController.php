@@ -34,7 +34,6 @@ use Symfony\Component\Validator\Validation;
 
 class OrderController extends AbstractController
 
-
 {
 //    #[Route('/order', name: 'app_order')]
 //    public function index(): Response
@@ -119,7 +118,7 @@ class OrderController extends AbstractController
                 $orderItemIdArray[] = $key;
             }
 
-//  Count in array [[4=>2], [10=>1], [26=>1]]
+//  Count of array [[4=>2], [10=>1], [26=>1]]
             $countOrderItem = count($orderItemIdQuantityArray);
 
 //  Build array of Products from productRepository, sorted ASC by "id"
@@ -127,7 +126,7 @@ class OrderController extends AbstractController
             $productArrayObjects = $repoProducts->findBy(['id' => $orderItemIdArray], ["id" => 'ASC']);
 
 //  Comparison count orderItems from request and count of Products from productRepository
-            if (count($orderItemIdArray) !== count($productArrayObjects)) {
+            if ($countOrderItem !== count($productArrayObjects)) {
                 $productIdArray = [];
                 foreach ($productArrayObjects as $product) {
                     $productIdArray[] = $product->getId();
@@ -287,6 +286,174 @@ class OrderController extends AbstractController
             ];
             return $this->response($data, 404);
         }
+    }
+
+
+    /**
+     * @Route("/order/{id}", name="order_edit", methods={"PUT"})
+     */
+    public function productPut(Request $request, ManagerRegistry $doctrine, ValidatorInterface $validator, int $id): JsonResponse
+    {
+        try {
+
+            $entityManager = $doctrine->getManager();
+            $order = $entityManager->getRepository(Order::class)->find($id);
+
+            if (!$order) {
+                throw new NotFoundHttpException(
+                    "Order not found for id: $id", null, 404
+                );
+            }
+
+            $request = $this->transformJsonBody($request);
+
+            $violations = new ConstraintViolationList();
+
+            $billingTypeId = $request->request->get('billing_type');
+            $requestOrderItemAll = $request->request->all("order_items");
+            $orderInputDTO = new OrderInputDTO(
+                $request->get('customer_email'),
+                $request->get('shipment_date'),
+                $billingTypeId,
+                $requestOrderItemAll);
+            $violationOrderInputDTO = $validator->validate($orderInputDTO);
+            $violations->addAll($violationOrderInputDTO);
+
+            foreach ($requestOrderItemAll as $item) {
+                $orderItemInputDTO = new OrderItemInputDTO($item);
+                $violationOrderItemInputDTO = $validator->validate($orderItemInputDTO);
+                $violations->addAll($violationOrderItemInputDTO);
+            }
+
+            if (0 !== count($violations)) {
+                throw  new CustomErrorException("", 422, null, $violations->getIterator());
+            }
+
+            $order->setCustomerEmail($request->get('customer_email'));
+            $shipmentDate = date("Y-m-d", $request->request->get('shipment_date'));
+            $order->setShipmentDate(new \DateTimeImmutable($shipmentDate));
+
+            $repoBillingType = $doctrine->getRepository(BillingType::class);
+            $billingType = $repoBillingType->find($billingTypeId);
+            $order->setBillingType($billingType);
+
+//  Build array [[4=>2], [10=>1], [26=>1]] from [["id"=>4,"quantity"=>2], ["id"=>10,"quantity"=>1], ["id"=>26,"quantity"=>1]]
+            $orderItemIdQuantityArray = [];
+            foreach ($requestOrderItemAll as $item) {
+                $orderItemIdQuantityArray [$item["id"]] = $item["quantity"];
+            }
+//  Sort array ASC by key
+            ksort($orderItemIdQuantityArray);
+
+//  Build array [2,1,1] from [[4=>2], [10=>1], [26=>1]]
+            $orderItemQuantityArray = [];
+//  Build array [4,10,26] from [[4=>2], [10=>1], [26=>1]]
+            $orderItemIdArray = [];
+            foreach ($orderItemIdQuantityArray as $key => $item) {
+                $orderItemQuantityArray[] = $item;
+                $orderItemIdArray[] = $key;
+            }
+
+//  Count of array [[4=>2], [10=>1], [26=>1]]
+            $countOrderItem = count($orderItemIdQuantityArray);
+
+//  Build array of Products from productRepository, sorted ASC by "id"
+            $repoProducts = $doctrine->getRepository(Product::class);
+            $productArrayObjects = $repoProducts->findBy(['id' => $orderItemIdArray], ["id" => 'ASC']);
+
+//  Comparison count orderItems from request and count of Products from productRepository
+            if ($countOrderItem !== count($productArrayObjects)) {
+                $productIdArray = [];
+                foreach ($productArrayObjects as $product) {
+                    $productIdArray[] = $product->getId();
+                }
+                $error = implode(',', array_diff($orderItemIdArray, $productIdArray));
+                throw new NotFoundHttpException(
+                    'Not found product for id :' . $error, null, 404
+                );
+            }
+
+            $deletePreviousOrderItems = $order->getorderItems();
+            foreach ($deletePreviousOrderItems as $orderItem) {
+                $entityManager = $doctrine->getManager();
+                $entityManager->remove($orderItem);
+                $entityManager->flush();
+            }
+
+            $sumOrderTotal = 0.00;
+            for ($i = 0; $i < $countOrderItem; $i++) {
+                $orderItem = new OrderItem();
+                $orderItem->setProductName($productArrayObjects [$i]->getName());
+                $orderItem->setProductId($productArrayObjects [$i]->getId());
+                $orderItem->setProductPrice($productArrayObjects [$i]->getPrice());
+                $orderItem->setProductQuantity($orderItemQuantityArray[$i]);
+                $order->addOrderItem($orderItem);
+                $entityManager = $doctrine->getManager();
+                $entityManager->persist($orderItem);
+
+                $sumOrderTotal = $sumOrderTotal + ($productArrayObjects [$i]->getPrice() * $orderItemQuantityArray[$i]);
+            }
+            $order->setOrderTotal($sumOrderTotal);
+
+            $entityManager = $doctrine->getManager();
+            $entityManager->persist($order);
+            $entityManager->flush();
+
+            $ordersRepo[] = $order;
+            $dataOrder = $order->orderGetSerializer($ordersRepo);
+            return $this->response($dataOrder);
+
+        } catch (NotFoundHttpException $e) {
+            $data = [
+                'status' => 404,
+                'message' => $e->getMessage(),
+            ];
+            return $this->response($data, 404);
+        } catch (CustomErrorException $e) {
+            return $this->response($e->getViolations(), $e->getCode());
+        }
+
+//            $product->setName($request->get('name'));
+//            $product->setDescription($request->get('description'));
+//            $product->setPrice($request->get('price'));
+//            $product->setCreatedAt(new \DateTimeImmutable());
+//
+//            if ($request->request->get('category_id') === $product->getCategory()->getId()) {
+//
+//                $entityManager->flush();
+////
+//                $ordersRepo[] = $order;
+//                $dataOrder = $order->orderGetSerializer($ordersRepo);
+//                return $this->response($dataOrder);
+//
+//            }
+//
+//            $categoryIdRequest = $request->request->get('category_id');
+//            $repository = $doctrine->getRepository(Category::class);
+//            $category = $repository->find($categoryIdRequest);
+//            if (!isset($category)) {
+//                throw new NotFoundHttpException(
+//                    'Not found category for id :' . $categoryIdRequest, null, 404
+//                );
+//            }
+//            $product->setCategory($category);
+//
+//            $entityManager->flush();
+////
+////
+//            $ordersRepo[] = $order;
+//            $dataOrder = $order->orderGetSerializer($ordersRepo);
+//            return $this->response($dataOrder);
+//
+//        } catch (NotFoundHttpException $e) {
+//            $data = [
+//                'status' => 404,
+//                'errors' => "Category not found for id: $id",
+//            ];
+//            return $this->response($data, 404);
+//        } catch (CustomErrorException $e) {
+//            return $this->response($e->getViolations(), $e->getCode());
+//        }
     }
 
 
