@@ -3,17 +3,12 @@
 namespace App\Controller\Category;
 
 use Symfony\Component\Routing\Annotation\Route;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use App\Helper\ResponseJson;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactory;
-use Symfony\Component\Serializer\Mapping\Loader\AnnotationLoader;
-use Doctrine\Common\Annotations\AnnotationReader;
 use App\Entity\Category;
-use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
-use Symfony\Component\Serializer\Serializer;
 
 /**
  * @Route("/category/{id}", name= "category_remove", methods={"DELETE"})
@@ -21,10 +16,9 @@ use Symfony\Component\Serializer\Serializer;
 class RemoveController extends AbstractController
 //"http://localhost:8082/category/id"
 {
-    public function __invoke(ManagerRegistry $doctrine, int $id): JsonResponse
+    public function __invoke(EntityManagerInterface $entityManager, ManagerRegistry $doctrine, int $id): mixed
     {
         try {
-            $em = $doctrine->getManager();
             $category = $doctrine->getRepository(Category::class)->find($id);
 
             if (!$category) {
@@ -33,33 +27,17 @@ class RemoveController extends AbstractController
                 );
             }
 
-//            $name = $category->getName();
-//            $sort = $category->getSort();
-//
-            $em->remove($category);
-            $em->flush();
-//            $data = [
-//                'status' => 200,
-//                'success' => "Category field delete successfully for id: $id ",
-//                'data' => [
-//                    'id' => $id,
-//                    'name' => $name,
-//                    'sort' => $sort,
-//                ],
-//            ];
-            $classMetadataFactory = new ClassMetadataFactory(new AnnotationLoader(new AnnotationReader()));
-            $normalizer = new ObjectNormalizer($classMetadataFactory);
-            $serializer = new Serializer([$normalizer]);
-            $data = $serializer->normalize($category, null, ['groups' => 'group1']);
+            $entityManager->remove($category);
+            $entityManager->flush();
 
-            return (new ResponseJson())->response($data);
+            return new JsonResponse([], 200);
 
         } catch (NotFoundHttpException $e) {
             $data = [
                 'status' => 404,
                 'errors' => "Category not found for id: $id",
             ];
-            return (new ResponseJson())->response($data, 404);
+            return new JsonResponse($data, 404);
         }
     }
 }
