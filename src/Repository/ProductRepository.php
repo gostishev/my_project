@@ -39,30 +39,6 @@ class ProductRepository extends ServiceEntityRepository
         }
     }
 
-    public function countEntity(ManagerRegistry $doctrine)
-    {
-        $em = $doctrine->getManager();
-        $repoEntity = $em->getRepository(Product::class);
-        return $repoEntity->createQueryBuilder('a')
-            // Filter by some parameter if you want
-//            ->where("a.category = $filterValue ")
-            ->select('count(a.id)')
-            ->getQuery()
-            ->getSingleScalarResult();
-    }
-
-    public function countEntityByFilterValue(ManagerRegistry $doctrine, $filterValue)
-    {
-        $em = $doctrine->getManager();
-        $repoEntity = $em->getRepository(Product::class);
-        return $repoEntity->createQueryBuilder('a')
-            // Filter by some parameter if you want
-            ->where("a.category = $filterValue ")
-            ->select('count(a.id)')
-            ->getQuery()
-            ->getSingleScalarResult();
-    }
-
 //    /**
 //     * @return Product[] Returns an array of Product objects
 //     */

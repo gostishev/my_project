@@ -16,7 +16,7 @@ use App\Validator\Constraints\SortConstraint;
 use App\Validator\Constraints\NameConstraint;
 
 /**
- * @Route("/category/{id}", name="category_parameter_edit", methods={"PATCH"})
+ * @Route("/category/{id}", name="category_edit", methods={"PATCH"})
  */
 class EditController extends AbstractController
 //"http://localhost:8082/category/id"

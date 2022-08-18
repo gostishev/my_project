@@ -11,7 +11,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use App\Entity\Category;
 
 /**
- * @Route("/category", name="categories", methods={"GET"})
+ * @Route("/category", name="category_get", methods={"GET"})
  */
 class GetController extends AbstractController
 //"http://localhost:8082/category?order=ASC"
