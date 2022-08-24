@@ -10,7 +10,6 @@ use App\Validator\FieldUnique;
 
 /**
  * @Annotation
- * @Target({"PROPERTY"})
  */
 class NameConstraint extends Compound
 {

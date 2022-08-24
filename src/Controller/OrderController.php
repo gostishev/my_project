@@ -12,9 +12,11 @@ use App\Entity\OrderItem;
 use App\Entity\Product;
 use App\Exception\CustomErrorException;
 use App\Repository\OrderRepository;
+use App\Repository\ProductRepository;
 use App\Validator\Constraints\PageConstraint;
 use App\Validator\Constraints\PageSizeConstraint;
 use Doctrine\Common\Annotations\AnnotationReader;
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -203,10 +205,13 @@ class OrderController extends AbstractController
      * @Route("/order", name="orders", methods={"GET"})
      */
 //  "http://localhost:8082/order?page=1&pageSize=2"
-    public function getOrders(ManagerRegistry $doctrine, Request $request, ManagerRegistry $registry, ValidatorInterface $validator): JsonResponse
+    public function getOrders(EntityManagerInterface $entityManager, Request $request, ValidatorInterface $validator): JsonResponse
     {
         try {
-            $entityCount = (new OrderRepository($registry))->countEntity($doctrine);
+            /** @var ProductRepository $repoProduct */
+            $repoProduct = $entityManager->getRepository(Product::class);
+            $entityCount = $repoProduct->countEntity();
+            dump($entityCount);
             if ($entityCount < 1) {
                 throw new NotFoundHttpException ("Not found orders ");
             }
@@ -216,7 +221,7 @@ class OrderController extends AbstractController
 
             [$pageSize, $offset] = $this->validatorPagination($page, $pageSize, $entityCount, $validator);
 
-            $ordersRepo = $doctrine->getRepository(Order::class)->findBy([], ["id" => "ASC"], $pageSize, $offset);
+            $ordersRepo = $entityManager->getRepository(Order::class)->findBy([], ["id" => "ASC"], $pageSize, $offset);
             $dataOrder = (new Order())->orderGetSerializer($ordersRepo);
             return $this->response($dataOrder);
 
@@ -238,9 +243,8 @@ class OrderController extends AbstractController
         $pageSizeConstraint = new PageSizeConstraint();
         /** @var   ConstraintViolationList $violationsPageSize */
         $violationsPageSize = $validator->validate($pageSize, $pageSizeConstraint);
-
         if (0 !== count($violationsPageSize)) {
-            throw  new CustomErrorException("", 422, null, $violationsPageSize->getIterator());
+            throw new CustomErrorException("", 422, null, $violationsPageSize->getIterator());
         }
 
         $offset = ($page - 1) * $pageSize;
@@ -249,9 +253,8 @@ class OrderController extends AbstractController
         $pageConstraint = new PageConstraint([], $pageCount);
         /** @var   ConstraintViolationList $violationsPage */
         $violationsPage = $validator->validate($page, $pageConstraint);
-
         if (0 !== count($violationsPage)) {
-            throw  new CustomErrorException("", 422, null, $violationsPage->getIterator());
+            throw new CustomErrorException("", 422, null, $violationsPage->getIterator());
         }
 
         return [$pageSize, $offset];

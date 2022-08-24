@@ -3,12 +3,15 @@
 namespace App\Controller\Category;
 
 use Symfony\Component\Routing\Annotation\Route;
+use App\DTO\CategoryOrderInputDTO;
+use App\Exception\CustomErrorException;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use App\Entity\Category;
+use Symfony\Component\Validator\ConstraintViolationList;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 /**
  * @Route("/category", name="category_get", methods={"GET"})
@@ -16,25 +19,16 @@ use App\Entity\Category;
 class GetController extends AbstractController
 //"http://localhost:8082/category?order=ASC"
 {
-    public function __invoke(ManagerRegistry $doctrine, Request $request): mixed
+    public function __invoke(EntityManagerInterface $entityManager, Request $request, ValidatorInterface $validator): JsonResponse|array
     {
-        try {
-            $order = $request->query->has('order') ? $request->query->get('order') : 'ASC';
-
-            if (!in_array($order, ['ASC', 'DESC'])) {
-                throw new NotFoundHttpException();
-            }
-
-            return $doctrine->getRepository(Category::class)->findBy([], ['sort' => $order]);
-
-        } catch (NotFoundHttpException $e) {
-            $data = [
-                'status' => 422,
-                'errors' => "Query parameter 'order' not equal to 'ASC' or 'DESC'",
-            ];
-            return new JsonResponse($data, 422);
+        $order = $request->query->has('order') ? $request->query->get('order') : 'ASC';
+        $dto = new CategoryOrderInputDTO($request->query->get('order'));
+        /** @var   ConstraintViolationList $violations */
+        $violations = $validator->validate($dto);
+        if (0 !== count($violations)) {
+            throw new CustomErrorException("", 422, null, $violations->getIterator());
         }
 
+        return $entityManager->getRepository(Category::class)->findBy([], ['sort' => $order]);
     }
-
 }

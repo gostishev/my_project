@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\Order;
 use App\Entity\Product;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -37,6 +38,28 @@ class ProductRepository extends ServiceEntityRepository
         if ($flush) {
             $this->getEntityManager()->flush();
         }
+    }
+
+    public function countByFilterValue($filterValue)
+    {
+//        $entityManager = $doctrine->getManager();
+//        $repoEntity = $entityManager->getRepository(Product::class);
+        return $this->createQueryBuilder('a')
+            ->where("a.category = :filterValue")
+            ->setParameter('filterValue', $filterValue)
+            ->select('count(a.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    public function countEntity()
+    {
+//        $em = $doctrine->getManager();
+//        $repoEntity = $em->getRepository(Product::class);
+        return $this->createQueryBuilder('a')
+            ->select('count(a.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 
 //    /**

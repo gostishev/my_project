@@ -16,28 +16,17 @@ use App\Entity\Category;
 class RemoveController extends AbstractController
 //"http://localhost:8082/category/id"
 {
-    public function __invoke(EntityManagerInterface $entityManager, ManagerRegistry $doctrine, int $id): mixed
+    public function __invoke(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
-        try {
-            $category = $doctrine->getRepository(Category::class)->find($id);
-
-            if (!$category) {
-                throw new NotFoundHttpException(
-                    "Category not found for id: $id", null, 404
-                );
-            }
-
+        $category = $entityManager->getRepository(Category::class)->find($id);
+        if (!$category) {
+            throw new NotFoundHttpException(
+                "Category not found for id: $id", null, 404
+            );
+        }
             $entityManager->remove($category);
             $entityManager->flush();
 
-            return new JsonResponse([], 200);
-
-        } catch (NotFoundHttpException $e) {
-            $data = [
-                'status' => 404,
-                'errors' => "Category not found for id: $id",
-            ];
-            return new JsonResponse($data, 404);
-        }
+        return new JsonResponse([], 200);
     }
 }

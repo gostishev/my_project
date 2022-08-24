@@ -27,6 +27,7 @@ class ShowController extends AbstractController
             }
             $productRepo[] = $product;
             $data = (new GetSerializer())->outputDtoSerializer($productRepo);
+
             return new JsonResponse($data);
 
         } catch (NotFoundHttpException $e) {
@@ -34,6 +35,7 @@ class ShowController extends AbstractController
                 'status' => 404,
                 'errors' => "Product not found for id: $id",
             ];
+
             return new JsonResponse($data, 404);
         }
     }

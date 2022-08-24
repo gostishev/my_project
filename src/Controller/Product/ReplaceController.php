@@ -45,15 +45,16 @@ class ReplaceController extends AbstractController
                 throw  new CustomErrorException("", 422, null, $violations->getIterator());
             }
 
-            $product->setName($request->get('name'));
-            $product->setDescription($request->get('description'));
-            $product->setPrice($request->get('price'));
+            $product->setName($request->request->get('name'));
+            $product->setDescription($request->request->get('description'));
+            $product->setPrice($request->request->get('price'));
             $product->setCreatedAt(new \DateTimeImmutable());
 
             if ($request->request->get('category_id') === $product->getCategory()->getId()) {
                 $entityManager->flush();
                 $productRepo[] = $product;
                 $data = (new GetSerializer())->outputDtoSerializer($productRepo);
+
                 return new JsonResponse($data);
             }
 
@@ -69,6 +70,7 @@ class ReplaceController extends AbstractController
             $entityManager->flush();
             $productRepo[] = $product;
             $data = (new GetSerializer())->outputDtoSerializer($productRepo);
+
             return new JsonResponse($data);
 
         } catch (NotFoundHttpException $e) {
@@ -76,7 +78,9 @@ class ReplaceController extends AbstractController
                 'status' => 404,
                 'errors' => "Category not found for id: $id",
             ];
+
             return new JsonResponse($data, 404);
+
         } catch (CustomErrorException $e) {
             return new JsonResponse($e->getViolations(), $e->getCode());
         }

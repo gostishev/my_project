@@ -42,18 +42,15 @@ class AddController extends AbstractController
             $categoryId = $request->request->get('category_id');
             $repository = $doctrine->getRepository(Category::class);
             $category = $repository->find($categoryId);
-
             if (!isset($category)) {
                 throw new NotFoundHttpException(
                     'Not found category for id :' . $categoryId, null, 404
                 );
             }
-
             $product->setName($request->request->get('name'));
             $product->setDescription($request->request->get('description'));
             $product->setPrice($request->request->get('price'));
             $product->setCreatedAt(new \DateTimeImmutable());
-
             $product->setCategory($category);
 
             $entityManager->persist($product);
@@ -61,6 +58,7 @@ class AddController extends AbstractController
 
             $productRepo[] = $product;
             $data = (new GetSerializer())->outputDtoSerializer($productRepo);
+
             return new JsonResponse($data, 200);
 
         } catch (NotFoundHttpException $e) {
@@ -68,7 +66,9 @@ class AddController extends AbstractController
                 'status' => 404,
                 'errors' => "Category not found for id: $categoryId",
             ];
+
             return new JsonResponse($data, 404);
+
         } catch (CustomErrorException $e) {
             return new JsonResponse($e->getViolations(), $e->getCode());
         }

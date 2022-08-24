@@ -26,12 +26,12 @@ class RemoveController extends AbstractController
                     "Product not found for id: $id", null, 404
                 );
             }
-
             $entityManager->remove($product);
             $entityManager->flush();
 
             $productRepo[] = $product;
             $data = (new GetSerializer())->outputDtoSerializer($productRepo);
+
             return new JsonResponse($data, 200);
 
         } catch (NotFoundHttpException $e) {
@@ -39,6 +39,7 @@ class RemoveController extends AbstractController
                 'status' => 404,
                 'errors' => "Category not found for id: $id",
             ];
+
             return new JsonResponse($data, 404);
         }
     }

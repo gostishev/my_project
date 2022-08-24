@@ -19,27 +19,21 @@ use App\DTO\CategoryInputDTO;
 class AddController extends AbstractController
 //"http://localhost:8082/category"
 {
-    public function __invoke(EntityManagerInterface $entityManager, Request $request, ValidatorInterface $validator): mixed
+    public function __invoke(EntityManagerInterface $entityManager, Request $request, ValidatorInterface $validator): Category
     {
-        try {
-            $dto = new CategoryInputDTO($request->get('name'), $request->get('sort'));
+            $dto = new CategoryInputDTO($request->request->get('name'), $request->request->get('sort'));
             /** @var   ConstraintViolationList $violations */
             $violations = $validator->validate($dto);
-
             if (0 !== count($violations)) {
-                throw  new CustomErrorException("", 422, null, $violations->getIterator());
+                throw new CustomErrorException("", 422, null, $violations->getIterator());
             }
 
             $category = new Category();
-            $category->setName($request->get('name'));
+            $category->setName($request->request->get('name'));
             $category->setSort($request->request->get('sort'));
             $entityManager->persist($category);
             $entityManager->flush();
 
             return $category;
-
-        } catch (CustomErrorException $e) {
-            return new JsonResponse($e->getViolations(), $e->getCode());
-        }
     }
 }

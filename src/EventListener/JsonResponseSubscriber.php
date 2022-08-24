@@ -28,7 +28,7 @@ class JsonResponseSubscriber implements EventSubscriberInterface
         $serializer = new Serializer([$normalizer]);
         $data = $serializer->normalize($event->getControllerResult(), null, ['groups' => 'group1']);
 
-        $response = new  JsonResponse($data, 200);
+        $response = new JsonResponse($data, 200);
 
         $event->setResponse($response);
     }

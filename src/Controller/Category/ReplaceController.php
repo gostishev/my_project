@@ -22,36 +22,24 @@ class ReplaceController extends AbstractController
 {
     public function __invoke(EntityManagerInterface $entityManager, Request $request, ValidatorInterface $validator, int $id): mixed
     {
-        try {
             $category = $entityManager->getRepository(Category::class)->find($id);
-
             if (!$category) {
                 throw new NotFoundHttpException(
                     "Category not found for id: $id", null, 404
                 );
             }
 
-            $dto = new CategoryInputDTO($request->get('name'), $request->get('sort'));
+            $dto = new CategoryInputDTO($request->request->get('name'), $request->request->get('sort'));
             /** @var   ConstraintViolationList $violations */
             $violations = $validator->validate($dto);
             if (0 !== count($violations)) {
-                throw  new CustomErrorException("", 422, null, $violations->getIterator());
+                throw new CustomErrorException("", 422, null, $violations->getIterator());
             }
 
-            $category->setName($request->get('name'));
-            $category->setSort($request->get('sort'));
+            $category->setName($request->request->get('name'));
+            $category->setSort($request->request->get('sort'));
             $entityManager->flush();
 
             return $category;
-
-        } catch (NotFoundHttpException $e) {
-            $data = [
-                'status' => 404,
-                'errors' => "Category not found for id: $id",
-            ];
-            return new JsonResponse($data, 404);
-        } catch (CustomErrorException $e) {
-            return new JsonResponse($e->getViolations(), $e->getCode());
-        }
     }
 }

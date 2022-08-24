@@ -35,7 +35,6 @@ class EditController extends AbstractController
                     "Product  not found for id: $id", null, 404
                 );
             }
-
             $categoryIdNowThereIs = $product->getCategory()->getId();
             $result = [
                 'name' => $product->getName(),
@@ -86,6 +85,7 @@ class EditController extends AbstractController
             $entityManager->flush();
             $productRepo[] = $product;
             $data = (new GetSerializer())->outputDtoSerializer($productRepo);
+
             return new JsonResponse($data, 200);
 
         } catch
@@ -94,6 +94,7 @@ class EditController extends AbstractController
                 'status' => 404,
                 'errors' => $e->getMessage(),
             ];
+
             return new JsonResponse($data, 404);
 
         } catch (CustomErrorException $e) {

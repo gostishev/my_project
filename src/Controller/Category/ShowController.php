@@ -17,24 +17,13 @@ class ShowController extends AbstractController
 {
     public function __invoke(ManagerRegistry $doctrine, int $id): mixed
     {
-        try {
-
             $category = $doctrine->getRepository(Category::class)->find($id);
             if (!$category) {
                 throw new NotFoundHttpException(
                     "Category not found for id: $id", null, 404
                 );
             }
+
             return $category;
-
-        } catch (NotFoundHttpException $e) {
-            $data = [
-                'status' => 404,
-                'errors' => "Category not found for id: $id",
-            ];
-            return new JsonResponse($data, 404);
-        }
-
     }
-
 }
