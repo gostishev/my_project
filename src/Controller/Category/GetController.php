@@ -3,14 +3,13 @@
 namespace App\Controller\Category;
 
 use Symfony\Component\Routing\Annotation\Route;
+use App\Helper\ValidatorInputDTO;
 use App\DTO\CategoryOrderInputDTO;
-use App\Exception\CustomErrorException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use App\Entity\Category;
-use Symfony\Component\Validator\ConstraintViolationList;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 /**
@@ -23,11 +22,7 @@ class GetController extends AbstractController
     {
         $order = $request->query->has('order') ? $request->query->get('order') : 'ASC';
         $dto = new CategoryOrderInputDTO($request->query->get('order'));
-        /** @var   ConstraintViolationList $violations */
-        $violations = $validator->validate($dto);
-        if (0 !== count($violations)) {
-            throw new CustomErrorException("", 422, null, $violations->getIterator());
-        }
+        (new ValidatorInputDTO())->validateInput($validator, $dto);
 
         return $entityManager->getRepository(Category::class)->findBy([], ['sort' => $order]);
     }

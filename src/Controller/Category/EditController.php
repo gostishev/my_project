@@ -3,14 +3,13 @@
 namespace App\Controller\Category;
 
 use Symfony\Component\Routing\Annotation\Route;
+use App\Helper\ValidatorInputDTO;
 use App\DTO\CategoryInputDTO;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use App\Entity\Category;
-use Symfony\Component\Validator\ConstraintViolationList;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
-use App\Exception\CustomErrorException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use App\Helper\NotPassedClass;
 
@@ -41,11 +40,7 @@ class EditController extends AbstractController
         }
 
         $dto = new CategoryInputDTO($name, $sort);
-        /** @var   ConstraintViolationList $violations */
-        $violations = $validator->validate($dto);
-        if (0 !== count($violations)) {
-            throw new CustomErrorException("", 422, null, $violations->getIterator());
-        }
+        (new ValidatorInputDTO())->validateInput($validator, $dto);
 
         if ($name === NotPassedClass::NOT_PASSED) {
             $name = $category->getName();
