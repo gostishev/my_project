@@ -28,18 +28,10 @@ class EditController extends AbstractController
             );
         }
 
-        if ($request->request->has('name')) {
-            $name = $request->request->get('name');
-        } else {
-            $name = NotPassedClass::NOT_PASSED;
-        }
-        if ($request->request->has('sort')) {
-            $sort = $request->request->get('sort');
-        } else {
-            $sort = $category->getSort();
-        }
-
-        $dto = new CategoryInputDTO($name, $sort);
+        $dto = new CategoryInputDTO(
+            $name = $request->request->has('name') ? $request->request->get('name') : NotPassedClass::NOT_PASSED,
+            $sort = $request->request->has('sort') ? $request->request->get('sort') : $category->getSort(),
+        );
         (new ValidatorInputDTO())->validateInput($validator, $dto);
 
         if ($name === NotPassedClass::NOT_PASSED) {

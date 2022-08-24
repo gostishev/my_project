@@ -2,7 +2,6 @@
 
 namespace App\Validator\Constraints;
 
-use PhpParser\Builder\Class_;
 use Symfony\Component\Validator\Constraints\Compound;
 use Symfony\Component\Validator\Constraints as Assert;
 

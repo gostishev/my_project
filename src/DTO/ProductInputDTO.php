@@ -4,6 +4,8 @@ namespace App\DTO;
 
 use Symfony\Component\Validator\Constraints as Assert;
 use App\Validator as CustomAssert;
+use App\Validator\Constraints\DescriptionProductConstraint;
+use App\Helper\NotPassedClass;
 
 class ProductInputDTO
 {
@@ -30,15 +32,6 @@ class ProductInputDTO
      * @Assert\NotNull
      */
     public $price;
-
-//@Assert\DateTime
-// @var string A "Y-m-d H:i:s" formatted value
-//    /**
-//     * @Assert\NotBlank
-//     * @Assert\NotNull
-//     * @Assert\Type ("integer")
-//     */
-//    public $createdAt;
 
     /**
      * @Assert\NotBlank
