@@ -45,7 +45,6 @@ class ProductInputDTO
         $this->name = $name;
         $this->description = $description;
         $this->price = $price;
-//        $this->createdAt = $createdAt;
         $this->category = $category;
     }
 

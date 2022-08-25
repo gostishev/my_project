@@ -6,7 +6,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 use App\Validator as CustomAssert;
 use Symfony\Component\Validator\Constraints\ExpressionSyntax;
 
-class CategoryOrderInputDTO
+class CategoryGetInputDTO
 {
     /**
      * @Assert\ExpressionSyntax(

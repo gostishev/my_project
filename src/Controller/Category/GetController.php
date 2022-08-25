@@ -4,7 +4,7 @@ namespace App\Controller\Category;
 
 use Symfony\Component\Routing\Annotation\Route;
 use App\Helper\ValidatorInputDTO;
-use App\DTO\CategoryOrderInputDTO;
+use App\DTO\CategoryGetInputDTO;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -21,7 +21,7 @@ class GetController extends AbstractController
     public function __invoke(EntityManagerInterface $entityManager, Request $request, ValidatorInterface $validator): JsonResponse|array
     {
         $order = $request->query->has('order') ? $request->query->get('order') : 'ASC';
-        $dto = new CategoryOrderInputDTO($request->query->get('order'));
+        $dto = new CategoryGetInputDTO($order);
         (new ValidatorInputDTO())->validateInput($validator, $dto);
 
         return $entityManager->getRepository(Category::class)->findBy([], ['sort' => $order]);
