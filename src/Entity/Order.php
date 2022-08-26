@@ -131,26 +131,25 @@ class Order
         return $this;
     }
 
-    public function orderGetSerializer(array $ordersRepo): array
+    public function orderGetSerializer(Order $order): OrderOutputDTO
     {
-        $orderOutputDTOArr = [];
+        return new OrderOutputDTO(
+            $order->getCustomerEmail(),
+            $order->getShipmentDate()->format('U'),
+            $order->getOrderTotal(),
+            $order->getBillingType(),
+            $order->orderItemOutputDataTransform(),
+        );
+    }
+
+    public function arrOrderGetSerializer($ordersRepo): array
+    {
+        $outputDtoArr = [];
         foreach ($ordersRepo as $order) {
-            $outputDto = new OrderOutputDTO(
-                $order->getCustomerEmail(),
-                $order->getShipmentDate()->format('U'),
-                $order->getOrderTotal(),
-                $order->getBillingType(),
-                $order->orderItemOutputDataTransform(),
-            );
-            $orderOutputDTOArr[] = $outputDto;
+            $outputDtoArr[] = $this->orderGetSerializer($order);
         }
 
-        $classMetadataFactory = new ClassMetadataFactory(new AnnotationLoader(new AnnotationReader()));
-        $normalizer = new ObjectNormalizer($classMetadataFactory);
-        $serializer = new Serializer([$normalizer]);
-        $data = $serializer->normalize($orderOutputDTOArr, null, ['groups' => 'group1']);
-
-        return $data;
+        return $outputDtoArr;
     }
 
     public function orderItemOutputDataTransform(): array

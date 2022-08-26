@@ -29,7 +29,6 @@ class AddController extends AbstractController
             $request->request->get('category_id'),
             $description = $request->request->has('description') ? $request->request->get('description') : "",
         );
-        dump($inputDto->description);
         (new ValidatorInputDTO())->validateInput($validator, $inputDto);
 
         $product = new Product();

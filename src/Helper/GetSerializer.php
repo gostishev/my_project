@@ -24,6 +24,7 @@ class GetSerializer
         foreach ($productsRepo as $product) {
             $outputDtoArr[] =  $this->outputDtoSerializer($product);
         }
+
         return $outputDtoArr;
     }
 }

@@ -2,7 +2,6 @@
 
 namespace App\Controller\Product;
 
-use App\Entity\Category;
 use Symfony\Component\Routing\Annotation\Route;
 use App\DTO\ProductOutputDTO;
 use Doctrine\ORM\EntityManagerInterface;
