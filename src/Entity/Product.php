@@ -30,7 +30,7 @@ class Product
     /**
      * @Groups ("group1")
      */
-    private $description = "";
+    private $description;
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
     /**
@@ -46,6 +46,7 @@ class Product
 
     #[ORM\ManyToOne(targetEntity: Category::class, fetch: 'EXTRA_LAZY', inversedBy: 'products')]
     /**
+     * @ORM\JoinColumn(name="category_id", referencedColumnName="id", onDelete="CASCADE")
      * @Groups ("group1")
      */
     #[ORM\JoinColumn(nullable: false)]

@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\Order;
 use App\Entity\Product;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -39,25 +40,23 @@ class ProductRepository extends ServiceEntityRepository
         }
     }
 
-    public function countEntity(ManagerRegistry $doctrine)
+    public function countByFilterValue($filterValue)
     {
-        $em = $doctrine->getManager();
-        $repoEntity = $em->getRepository(Product::class);
-        return $repoEntity->createQueryBuilder('a')
-            // Filter by some parameter if you want
-//            ->where("a.category = $filterValue ")
+//        $entityManager = $doctrine->getManager();
+//        $repoEntity = $entityManager->getRepository(Product::class);
+        return $this->createQueryBuilder('a')
+            ->where("a.category = :filterValue")
+            ->setParameter('filterValue', $filterValue)
             ->select('count(a.id)')
             ->getQuery()
             ->getSingleScalarResult();
     }
 
-    public function countEntityByFilterValue(ManagerRegistry $doctrine, $filterValue)
+    public function countEntity()
     {
-        $em = $doctrine->getManager();
-        $repoEntity = $em->getRepository(Product::class);
-        return $repoEntity->createQueryBuilder('a')
-            // Filter by some parameter if you want
-            ->where("a.category = $filterValue ")
+//        $em = $doctrine->getManager();
+//        $repoEntity = $em->getRepository(Product::class);
+        return $this->createQueryBuilder('a')
             ->select('count(a.id)')
             ->getQuery()
             ->getSingleScalarResult();

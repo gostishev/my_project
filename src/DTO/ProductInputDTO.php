@@ -4,6 +4,8 @@ namespace App\DTO;
 
 use Symfony\Component\Validator\Constraints as Assert;
 use App\Validator as CustomAssert;
+use App\Validator\Constraints\DescriptionProductConstraint;
+use App\Helper\NotPassedClass;
 
 class ProductInputDTO
 {
@@ -18,7 +20,7 @@ class ProductInputDTO
     /**
      * @Assert\Type("string")
      * @Assert\Length(
-     *      max = 50,
+     *      max = 1000,
      *      maxMessage = "Your description cannot be longer than 1000 characters"
      * )
      */
@@ -31,15 +33,6 @@ class ProductInputDTO
      */
     public $price;
 
-//@Assert\DateTime
-// @var string A "Y-m-d H:i:s" formatted value
-    /**
-     * @Assert\NotBlank
-     * @Assert\NotNull
-     * @Assert\Type ("integer")
-     */
-    public $createdAt;
-
     /**
      * @Assert\NotBlank
      * @Assert\Type("integer")
@@ -47,12 +40,11 @@ class ProductInputDTO
      */
     public $category;
 
-    public function __construct($name, $description, $price, $createdAt, $category )
+    public function __construct($name, $price, $category, $description = "")
     {
         $this->name = $name;
         $this->description = $description;
         $this->price = $price;
-        $this->createdAt = $createdAt;
         $this->category = $category;
     }
 

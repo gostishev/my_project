@@ -10,16 +10,21 @@ use App\Validator\FieldUnique;
 
 /**
  * @Annotation
+ * @Target({"PROPERTY"})
  */
-class NameConstraint extends Compound
+class PageSizeConstraint extends Compound
 {
     protected function getConstraints(array $options): array
     {
         return [
             new Assert\NotBlank(),
             new Assert\NotNull(),
-            new Assert\Type('string'),
-            new CustomAssert\FieldUnique(),
+            new Assert\Type('integer'),
+            new Assert\Range([
+                    'min' => 1,
+                    'max' => 101,
+                    'notInRangeMessage' => "Query parameter pageSize must be between {{ min }} and {{ max }} tall to enter",]
+            ),
         ];
     }
 
